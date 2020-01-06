@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 public class Client {
@@ -26,7 +27,7 @@ public class Client {
             // converting array to one big str with the correct template
             //DISCOVER
             String str1 = stringBuildHelperForDiscover();
-            DatagramPacket dp = new DatagramPacket(str1.getBytes(), str1.length(), serverIP, 3117);
+            DatagramPacket dp = new DatagramPacket(str1.getBytes(StandardCharsets.UTF_8), str1.length(), serverIP, 3117);
             ds.send(dp);
             // Waiting to OFFER
             System.out.println("Sent Packet");
@@ -68,7 +69,7 @@ public class Client {
             for (DatagramPacket data : listOfServers) {
                 if (index + 1 < temp.length) {
                     String str2 = stringBuildHelperForRequest(array, temp[index], temp[index + 1]);
-                    DatagramPacket dp2 = new DatagramPacket(str2.getBytes(), str2.length(), data.getAddress(), 3117);
+                    DatagramPacket dp2 = new DatagramPacket(str2.getBytes(StandardCharsets.UTF_8), str2.length(), data.getAddress(), 3117);
                     System.out.println("Sending Packet to:" + data.getAddress().toString() + ":" + data.getPort());
                     ds.send(dp2);
                     index += 2;

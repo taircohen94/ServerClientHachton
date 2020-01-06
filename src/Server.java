@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,7 +90,7 @@ public class Server {
         if (afterParse[1].equals("\1")) { // Discover
             //TODO: maybe change to my group name
             String toSendOffer = afterParse[0] + "\2";
-            return toSendOffer.getBytes();
+            return toSendOffer.getBytes(StandardCharsets.UTF_8);
         } else if (afterParse[1].equals("\3")) { //Request
             //Get Hash
             byte[] array2 = new byte[40];
@@ -123,12 +124,12 @@ public class Server {
                 //nack
                 System.out.println("Sendong NACK");
                 String toSendOffer = team  +"\5"+ afterParse[2]  + afterParse[3] ;
-                return toSendOffer.getBytes();
+                return toSendOffer.getBytes(StandardCharsets.UTF_8);
             } else {
                 //ack
                 System.out.println("Sendong ACK");
                 String toSendOffer = team + "\4" +afterParse[2] + afterParse[3] + theTextWeFound + "";
-                return toSendOffer.getBytes();
+                return toSendOffer.getBytes(StandardCharsets.UTF_8);
             }
         }
         return null;
