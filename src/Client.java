@@ -20,7 +20,7 @@ public class Client {
     public void start(String[] array) {
         try {
             //datagram socket
-            DatagramSocket ds = new DatagramSocket(5999);
+            DatagramSocket ds = new DatagramSocket();
 //            ds.connect(serverIP, 3117);
             ds.setBroadcast(true);
             // converting array to one big str with the correct template
@@ -50,12 +50,13 @@ public class Client {
                     if (strReceived.substring(32, 33).equals("\2")) {
                         listOfServers.add(dpReceived);
                     }
-                    break;
+//                    break;
                 } catch (IOException e) {
                     break;
                 }
             }
             // REQUEST
+            System.out.println("number of server is:" + listOfServers.size());
             if (listOfServers.size() == 0) {
                 System.out.println("there is no available servers");
                 ds.close();
