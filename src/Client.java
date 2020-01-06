@@ -1,9 +1,8 @@
 
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 public class Client {
@@ -12,15 +11,20 @@ public class Client {
     private ArrayList<DatagramPacket> listOfServers;
 
     public Client(InetAddress serverIP, int serverPort) {
-        this.serverIP = serverIP;
+        try {
+            this.serverIP = InetAddress.getByName("255.255.255.255");
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
         this.serverPort = serverPort;
         this.listOfServers = new ArrayList<>();
     }
 
+//    9017347a610d1436c1aaf52764e6578e8fc1a083
     public void start(String[] array) {
         try {
             //datagram socket
-            DatagramSocket ds = new DatagramSocket(5999);
+            DatagramSocket ds = new DatagramSocket();
 //            ds.connect(serverIP, 3117);
             ds.setBroadcast(true);
             // converting array to one big str with the correct template
@@ -50,7 +54,7 @@ public class Client {
                     if (strReceived.substring(32, 33).equals("\2")) {
                         listOfServers.add(dpReceived);
                     }
-                    break;
+                    //break;
                 } catch (IOException e) {
                     break;
                 }
