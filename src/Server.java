@@ -27,13 +27,14 @@ public class Server {
     private void runServer() {
         try {
             // datagram socket
-
             DatagramSocket serverSocket = new DatagramSocket(port);
-            serverSocket.setSoTimeout(listeningInterval);
+         //   serverSocket.setSoTimeout(listeningInterval);
             while (!stop) {
                 try {
                     DatagramPacket clientPacket = new DatagramPacket(new byte[1024],1024);
+                    System.out.println("Waiting for packets to be received");
                     serverSocket.receive(clientPacket);
+                    System.out.println("sercer");
                     new Thread(() -> {
                         handleClient(serverSocket,clientPacket);
                     }).start();
@@ -48,13 +49,18 @@ public class Server {
 
     private void handleClient(DatagramSocket clientSocket, DatagramPacket clientPacket) {
         try {
+            System.out.println("at handle client function");
             if(numOfClient.addAndGet(1) < 20) {
                 byte[] fromClient = splitBytesArrayToStringArray(clientPacket.getData());
                 if(fromClient == null){
+                    System.out.println("null");
                     return;
                 }
                 else {
+                    System.out.println("not null");
+                    System.out.println(new String(fromClient));
                     clientSocket.send(new DatagramPacket(fromClient,fromClient.length,clientPacket.getAddress(),clientPacket.getPort()));
+                    System.out.println("Packet Sent");
                 }
             }
         } catch (IOException e) {
@@ -69,6 +75,8 @@ public class Server {
 
     private byte[] splitBytesArrayToStringArray(byte[] bytes) {
         String[] afterParse = new String[6];
+        String harta = new String(bytes);
+        harta = harta.trim();
         byte[] nameOfGroup = new byte[32];
         for (int i = 0; i < 32; i++) {
             nameOfGroup[i] = bytes[i];
@@ -78,11 +86,11 @@ public class Server {
         byte[] type = new byte[1];
         type[0] = bytes[32];
         afterParse[1] = new String(type);
-        if (afterParse[1].equals("1")) { // Discover
+        if (afterParse[1].equals("\1")) { // Discover
             //TODO: maybe change to my group name
-            String toSendOffer = afterParse[0] + "2";
+            String toSendOffer = afterParse[0] + "\2";
             return toSendOffer.getBytes();
-        } else if (afterParse[1].equals("3")) { //Request
+        } else if (afterParse[1].equals("\3")) { //Request
             //Get Hash
             byte[] array2 = new byte[40];
             for (int i = 0; i < 40; i++) {
@@ -95,7 +103,7 @@ public class Server {
             afterParse[3] = new String(originalLength); //Original Length
 
 
-            int numOfOriginalString = (bytes.length - 74) / 2;
+            int numOfOriginalString = (harta.length() - 74) / 2;
 
             byte[] OriginalStringStart = new byte[numOfOriginalString];
             for (int i = 0; i < numOfOriginalString; i++) {
@@ -104,7 +112,7 @@ public class Server {
 
             byte[] OriginalStringEnd = new byte[numOfOriginalString];
             for (int i = 0; i < numOfOriginalString; i++) {
-                OriginalStringStart[i] = bytes[i + 74 + numOfOriginalString];
+                OriginalStringEnd[i] = bytes[i + 74 + numOfOriginalString];
             }
             afterParse[4] = new String(OriginalStringStart);
             afterParse[5] = new String(OriginalStringEnd);
@@ -113,11 +121,13 @@ public class Server {
             String theTextWeFound = tryDeHash(afterParse[4], afterParse[5], afterParse[2]);
             if (theTextWeFound == null) {
                 //nack
-                String toSendOffer = team + afterParse[1] + "5"+afterParse[3];
+                System.out.println("Sendong NACK");
+                String toSendOffer = team  +"\5"+ afterParse[2]  + afterParse[3] ;
                 return toSendOffer.getBytes();
             } else {
                 //ack
-                String toSendOffer = team + afterParse[1] + "4" + afterParse[3] + "" + theTextWeFound + "";
+                System.out.println("Sendong ACK");
+                String toSendOffer = team + "\4" +afterParse[2] + afterParse[3] + theTextWeFound + "";
                 return toSendOffer.getBytes();
             }
         }
@@ -143,15 +153,21 @@ public class Server {
 
     private String tryDeHash(String startRange, String endRange, String originalHash){
         int start = convertStringToInt(startRange);
+        System.out.println("Start Integer is:" + start);
         int end = convertStringToInt(endRange);
+        System.out.println("End Integer is:" + end);
         int length = startRange.length();
+        System.out.println("Original Hash: " + originalHash);
+        System.out.println("Original Hash Length: " + originalHash.length());
         for(int i = start; i <= end; i++){
             String currentString = converxtIntToString(i, length);
             String hash = hash(currentString);
             if(originalHash.equals(hash)){
+                System.out.println("Found Hash: " + currentString);
                 return currentString;
             }
         }
+        System.out.println("Finished calculating");
         return null;
     }
 

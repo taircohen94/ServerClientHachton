@@ -10,10 +10,10 @@ public class Main_Server {
     private static void StartingServer() {
         Server server = new Server(
                 3117,
-                1000);
+                10000);
         server.start();
         StartCLI();
-        server.stop();
+       // server.stop();
     }
 
     private static void StartCLI(){
@@ -21,9 +21,9 @@ public class Main_Server {
         System.out.println("Enter 'exit' to close server.");
         Scanner reader = new Scanner(System.in);
 
-        do
+       // do
         {
-            System.out.print(">>");
-        } while (!reader.next().toLowerCase().equals("exit"));
+        //    System.out.print(">>");
+        } //while (!reader.next().toLowerCase().equals("exit"));
     }
 }

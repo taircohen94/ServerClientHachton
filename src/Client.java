@@ -20,44 +20,55 @@ public class Client {
     public void start(String[] array) {
         try {
             //datagram socket
-            DatagramSocket ds = new DatagramSocket();
-            ds.connect(serverIP, 3117);
+            DatagramSocket ds = new DatagramSocket(5999);
+//            ds.connect(serverIP, 3117);
+            ds.setBroadcast(true);
             // converting array to one big str with the correct template
             //DISCOVER
             String str1 = stringBuildHelperForDiscover();
             DatagramPacket dp = new DatagramPacket(str1.getBytes(), str1.length(), serverIP, 3117);
             ds.send(dp);
             // Waiting to OFFER
+            System.out.println("Sent Packet");
             long startTimeMillis = System.currentTimeMillis();
             while (true) {
                 try {
                     long currentTimeMillis = System.currentTimeMillis();
-                    if (currentTimeMillis - startTimeMillis < 1000) {
-                        ds.setSoTimeout((int) (1000 - (currentTimeMillis - startTimeMillis)));
+                    if (currentTimeMillis - startTimeMillis < 20000) {
+                        ds.setSoTimeout((int) (20000 - (currentTimeMillis - startTimeMillis)));
                     } else {
-                        System.out.println("there is no available servers...");
                         break;
                     }
                     byte[] buf = new byte[1024];
-                    DatagramPacket dpReceived = new DatagramPacket(buf, 1024);
+                    DatagramPacket dpReceived = new DatagramPacket(buf, 1024, serverIP, 3117);
+                    System.out.println("Before Receive");
                     ds.receive(dpReceived);
+                    System.out.println("After Receive");
                     String strReceived = new String(dpReceived.getData());
-                    ds.receive(dpReceived);
                     // we received offer
-                    if (strReceived.charAt(32) == '2') {
+                    System.out.println(strReceived);
+                    if (strReceived.substring(32, 33).equals("\2")) {
                         listOfServers.add(dpReceived);
                     }
+                    break;
                 } catch (IOException e) {
                     break;
                 }
             }
             // REQUEST
+            if (listOfServers.size() == 0) {
+                System.out.println("there is no available servers");
+                ds.close();
+                return;
+            }
             String[] temp = divideToDomains(Integer.parseInt(array[1]), listOfServers.size());
+            System.out.println("Domains divided " + temp[0] + "|" + temp[1]);
             int index = 0;
             for (DatagramPacket data : listOfServers) {
                 if (index + 1 < temp.length) {
                     String str2 = stringBuildHelperForRequest(array, temp[index], temp[index + 1]);
                     DatagramPacket dp2 = new DatagramPacket(str2.getBytes(), str2.length(), data.getAddress(), 3117);
+                    System.out.println("Sending Packet to:" + data.getAddress().toString() + ":" + data.getPort());
                     ds.send(dp2);
                     index += 2;
                 }
@@ -67,21 +78,14 @@ public class Client {
             boolean found = false;
             while (true) {
                 try {
-                    long currentTimeMillis = System.currentTimeMillis();
-                    if (currentTimeMillis - startTimeMillis < 1000) {
-                        ds.setSoTimeout((int) (1000 - (currentTimeMillis - startTimeMillis)));
-                    } else {
-                        System.out.println("there is no available servers...");
-                        break;
-                    }
                     byte[] buf = new byte[1024];
                     DatagramPacket dpReceived1 = new DatagramPacket(buf, 1024);
                     ds.receive(dpReceived1);
-                    String strReceived = new String(dp.getData());
-                    ds.receive(dpReceived1);
+                    String strReceived = new String(dpReceived1.getData());
                     // we received offer
-                    if (strReceived.charAt(32) == '4') {
-                        System.out.println("The answer is:" + strReceived.substring(73));
+                    System.out.println("substring is " + strReceived.substring(32, 33));
+                    if (strReceived.substring(32, 33).equals("\4")) {
+                        System.out.println("The answer is:" + strReceived.substring(74));
                         found = true;
                         break;
                     }
@@ -89,7 +93,7 @@ public class Client {
                     break;
                 }
             }
-            if(found == false){
+            if (!found) {
                 System.out.println("All the servers return NACK");
             }
             //close socket
@@ -101,8 +105,10 @@ public class Client {
 
     private String stringBuildHelperForRequest(String[] array, String startRange, String endRange) {
         String result = "YBETC-Team                      ";
-        result += "3";
-        result += array[0] + array[1];
+        result += "\3";
+        int a = Integer.parseInt(array[1]);
+        char c = (char) a;
+        result += array[0] +c;
         result += startRange + endRange;
         return result;
     }
@@ -112,7 +118,7 @@ public class Client {
      */
     private String stringBuildHelperForDiscover() {
         String result = "YBETC-Team                      ";
-        result += "1";
+        result += "\1";
         return result;
     }
 

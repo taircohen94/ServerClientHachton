@@ -39,7 +39,7 @@ public class Main_Client {
         while (flag) {
             System.out.println("Please enter the input string length:");
             stringLength = myObj.nextLine();
-            if (stringLength.length() >= 10 || stringLength.length() < 0) {
+            if (stringLength.length() >= 255 || stringLength.length() < 0) {
                 System.out.println("Please enter valid argument");
                 continue;
             }
