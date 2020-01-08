@@ -1,7 +1,10 @@
 
 
 import java.io.IOException;
-import java.net.*;
+import java.math.BigInteger;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -11,16 +14,11 @@ public class Client {
     private ArrayList<DatagramPacket> listOfServers;
 
     public Client(InetAddress serverIP, int serverPort) {
-        try {
-            this.serverIP = InetAddress.getByName("255.255.255.255");
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+        this.serverIP = serverIP;
         this.serverPort = serverPort;
         this.listOfServers = new ArrayList<>();
     }
 
-//    9017347a610d1436c1aaf52764e6578e8fc1a083
     public void start(String[] array) {
         try {
             //datagram socket
@@ -30,7 +28,7 @@ public class Client {
             // converting array to one big str with the correct template
             //DISCOVER
             String str1 = stringBuildHelperForDiscover();
-            DatagramPacket dp = new DatagramPacket(str1.getBytes(), str1.length(), serverIP, 3117);
+            DatagramPacket dp = new DatagramPacket(str1.getBytes(StandardCharsets.UTF_8), str1.length(), serverIP, 3117);
             ds.send(dp);
             // Waiting to OFFER
             System.out.println("Sent Packet");
@@ -38,28 +36,29 @@ public class Client {
             while (true) {
                 try {
                     long currentTimeMillis = System.currentTimeMillis();
-                    if (currentTimeMillis - startTimeMillis < 20000) {
-                        ds.setSoTimeout((int) (20000 - (currentTimeMillis - startTimeMillis)));
+                    if (currentTimeMillis - startTimeMillis < 1000) {
+                        ds.setSoTimeout((int) (1000 - (currentTimeMillis - startTimeMillis)));
                     } else {
                         break;
                     }
                     byte[] buf = new byte[1024];
                     DatagramPacket dpReceived = new DatagramPacket(buf, 1024, serverIP, 3117);
-                    System.out.println("Before Receive");
+                    System.out.println("Before OFFER Receive");
                     ds.receive(dpReceived);
-                    System.out.println("After Receive");
+                    System.out.println("After OFFER Receive");
                     String strReceived = new String(dpReceived.getData());
                     // we received offer
                     System.out.println(strReceived);
                     if (strReceived.substring(32, 33).equals("\2")) {
                         listOfServers.add(dpReceived);
                     }
-                    //break;
+                    break;
                 } catch (IOException e) {
                     break;
                 }
             }
             // REQUEST
+            System.out.println("number of server is:" + listOfServers.size());
             if (listOfServers.size() == 0) {
                 System.out.println("there is no available servers");
                 ds.close();
@@ -71,7 +70,7 @@ public class Client {
             for (DatagramPacket data : listOfServers) {
                 if (index + 1 < temp.length) {
                     String str2 = stringBuildHelperForRequest(array, temp[index], temp[index + 1]);
-                    DatagramPacket dp2 = new DatagramPacket(str2.getBytes(), str2.length(), data.getAddress(), 3117);
+                    DatagramPacket dp2 = new DatagramPacket(str2.getBytes(StandardCharsets.UTF_8), str2.length(), data.getAddress(), 3117);
                     System.out.println("Sending Packet to:" + data.getAddress().toString() + ":" + data.getPort());
                     ds.send(dp2);
                     index += 2;
@@ -79,6 +78,7 @@ public class Client {
             }
             // waiting for ack to nack
             listOfServers.clear();
+            ds.setSoTimeout(30000);
             boolean found = false;
             while (true) {
                 try {
@@ -127,7 +127,37 @@ public class Client {
     }
 
 
+    private String converxtIntToString1(BigInteger toConvert, int length) {
+        StringBuilder s = new StringBuilder(length);
+        while (toConvert.compareTo(new BigInteger("0")) > 0 ){
+            BigInteger c = toConvert.mod(new BigInteger("26"));
+            s.insert(0, (char) (c.intValue() + 'a'));
+            toConvert = toConvert.divide(new BigInteger("26"));
+            length --;
+        }
+        while (length > 0){
+            s.insert(0, 'a');
+            length--;
+        }
+        return s.toString();
+    }
+
+    private BigInteger convertStringToInt1(String toConvert) {
+        char[] charArray = toConvert.toCharArray();
+        BigInteger num = new BigInteger("0");
+        for(char c : charArray){
+            if(c < 'a' || c > 'z'){
+                throw new RuntimeException();
+            }
+            num = num.multiply(new BigInteger("26"));
+            int x = c - 'a';
+            num = num.add(new BigInteger(Integer.toString(x)));
+        }
+        return num;
+    }
+
     public String[] divideToDomains(int stringLength, int numOfServers) {
+        System.out.println("started divideToDomains");
         String[] domains = new String[numOfServers * 2];
 
         StringBuilder first = new StringBuilder(); //aaa
@@ -137,20 +167,21 @@ public class Client {
             first.append("a"); //aaa
             last.append("z"); //zzz
         }
-
-        int total = convertStringToInt(last.toString());
-        int perServer = (int) Math.floor(((double) total) / ((double) numOfServers));
+        BigInteger total = convertStringToInt1(last.toString());
+        int perServer = (int) Math.floor(((double) total.doubleValue()) / ((double) numOfServers));
 
         domains[0] = first.toString(); //aaa
         domains[domains.length - 1] = last.toString(); //zzz
-        int summer = 0;
+        BigInteger summer = new BigInteger("0");
 
         for (int i = 1; i <= domains.length - 2; i += 2) {
-            summer += perServer;
-            domains[i] = converxtIntToString(summer, stringLength); //end domain of server
-            summer++;
-            domains[i + 1] = converxtIntToString(summer, stringLength); //start domain of next server
+
+            summer.add(new BigInteger(perServer+""));
+            domains[i] = converxtIntToString1(summer, stringLength); //end domain of server
+            summer.add(new BigInteger("1"));
+            domains[i + 1] = converxtIntToString1(summer, stringLength); //start domain of next server
         }
+        System.out.println("ended divideToDomains");
         return domains;
     }
 
